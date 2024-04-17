@@ -1,0 +1,190 @@
+#univariate analysis
+Fluid_intelligence_20016 <- c()#建立空向量用以存储提取结果
+for (i in 11:374){
+  fit <- lm(log20016~train_data[,i]+X21022+X31_0+APOE4_new, data=train_data)
+  Fluid_intelligence_20016<- rbind(Fluid_intelligence_20016, 
+                   c(colnames(train_data)[i], coef(summary(fit))[2,c(1,2,4)]))}
+#lm[[i]]可以查看第i个特征的glm值
+Fluid_intelligence_20016<-as.data.frame(Fluid_intelligence_20016)
+##write.csv(Fluid_intelligence_20016,"Fluid_intelligence_20016_train_data.csv",row.names=F)
+
+Pairs_matching_399 <- c()#建立空向量用以存储提取结果
+for (i in 11:374){
+  fit <- lm(log399~train_data[,i]+X21022+X31_0+APOE4_new, data=train_data)
+  Pairs_matching_399<- rbind(Pairs_matching_399, 
+                   c(colnames(train_data)[i], coef(summary(fit))[2,c(1,2,4)]))}
+#lm[[i]]可以查看第i个特征的glm值
+Pairs_matching_399<-as.data.frame(Pairs_matching_399)
+##write.csv(Pairs_matching_399,"Pairs_matching_399_train_data.csv",row.names=F)
+
+Reaction_time_20023 <- c()#建立空向量用以存储提取结果
+for (i in 11:374){
+  fit <- lm(log20023~train_data[,i]+X21022+X31_0+APOE4_new, data=train_data)
+  Reaction_time_20023<- rbind(Reaction_time_20023, 
+                   c(colnames(train_data)[i], coef(summary(fit))[2,c(1,2,4)]))}
+#lm[[i]]可以查看第i个特征的glm值
+Reaction_time_20023<-as.data.frame(Reaction_time_20023)
+##write.csv(Reaction_time_20023,"Reaction_time_20023_train_data.csv",row.names=F)
+
+Prospective_memory_20018_failed_95_new <- c()#建立空向量用以存储提取结果
+for (i in 11:374){
+  fit <- glm(Prospective_memory_20018_failed_95_new~train_data[,i]+X21022+X31_0+APOE4_new,data=train_data, family = binomial)
+  Prospective_memory_20018_failed_95_new<- rbind(Prospective_memory_20018_failed_95_new, 
+                   c(colnames(train_data)[i], coef(summary(fit))[2,c(1,2,4)]))}
+#lm[[i]]可以查看第i个特征的glm值
+Prospective_memory_20018_failed_95_new<-as.data.frame(Prospective_memory_20018_failed_95_new)
+##write.csv(Prospective_memory_20018_failed_95_new,"Prospective_memory_20018_failed_95_new_train_data.csv",row.names=F)
+
+##单变量分析
+A<-Fluid_intelligence_20016
+B<-Pairs_matching_399
+C<-Reaction_time_20023
+D<-Prospective_memory_20018_failed_95_new
+
+names(A)<-c("V1","Estimate16","Std. Error16","PA")
+names(B)<-c("V1","Estimate399","Std. Error399","PB")
+names(C)<-c("V1","Estimate23","Std. Error23","PC")
+names(D)<-c("V1","Estimate18","Std. Error18","PD")
+
+##merged_train_data <- merge(A, B, by = "V1", all = TRUE) %>% merge(C, by = "V1", all = TRUE) %>% merge(D, by = "V1", all = TRUE)
+
+##write.csv(merged_train_data,"merged_train_data.all.result.单因素分析.csv",row.names=F)
+
+A<-as.data.frame(A)
+B<-as.data.frame(B)
+C<-as.data.frame(C)
+D<-as.data.frame(D)
+
+A$PA<-as.numeric(A$PA)
+B$PB<-as.numeric(B$PB)
+C$PC<-as.numeric(C$PC)
+D$PD<-as.numeric(D$PD)
+
+A$cutoff [A$PA < 1.37e-4] <- 1
+B$cutoff [B$PB < 1.37e-4] <- 1
+C$cutoff [C$PC < 1.37e-4] <- 1
+D$cutoff [D$PD < 1.37e-4] <- 1
+##
+newset_20016_training <- subset(A, cutoff == 1,select = c(1:4))##233
+newset_399_training <- subset(B, cutoff == 1,select = c(1:4))##70
+newset_20023_training <- subset(C, cutoff == 1,select = c(1:4))##139
+newset_20018_training <- subset(D, cutoff == 1,select = c(1:4))##184
+
+N1<-full_join(newset_20016_training,newset_399_training,by="V1")
+N2<-full_join(newset_20023_training,newset_20018_training,by="V1")
+
+newset_training<-full_join(N1,N2,by="V1")##255
+##
+上面一样重来一遍
+significant_20016_testing <- subset(A, cutoff == 1,select = c(1:4))
+significant_399_testing <- subset(B, cutoff == 1,select = c(1:4))
+significant_20023_testing <- subset(C, cutoff == 1,select = c(1:4))
+significant_20018_testing <- subset(D, cutoff == 1,select = c(1:4))
+
+N1<-full_join(significant_20016_testing, significant_399_testing,by="V1")
+N2<-full_join(significant_20023_testing, significant_20018_testing,by="V1")
+
+
+N16<- inner_join(newset_20016_training, significant_20016_testing,by="V1")##211
+N399<- inner_join(newset_399_training, significant_399_testing,by="V1")##55
+N23<- inner_join(newset_20023_training, significant_20023_testing,by="V1")##116
+N18<- inner_join(newset_20018_training, significant_20018_testing,by="V1")##147
+
+Na<-full_join(N16, N399, by="V1")
+Nb<-full_join(N23, N18, by="V1")
+
+significant_training_testing<-full_join(Na,Nb,by="V1")##234
+
+##然后进行多变量回归
+write.csv(N16,"N16.result.单因素分析.csv",row.names=F)
+write.csv(N18,"N18.result.单因素分析.csv",row.names=F)
+write.csv(N23,"N23.result.单因素分析.csv",row.names=F)
+write.csv(N399,"N399.result.单因素分析.csv",row.names=F)
+
+##
+Log20016fit <- lm(log20016~X21022+X31_0+APOE4_new+ X6138+X738+X22032+X1787+X22035+X22036+X1279_2+X6160+X6162+X6164+X1797+X1835+X1777+X3088+X1647+X1100+X1717+X6142_1+X6146+X670+X680+X728+X2306+X1170+X1239+X1259+X1558+X1628+X20116+X20117+X2267+X924_1+X943+X1190+X1200+X1220+X2178+X2296+X1110+X2237+X1329+X1359+X1379+X1389+X1408+X1418+X1448+X1478+X1518+X1538+X1687+X1031+X2050+X2060+X2070+X2080+X2110+X1920+X1930+X1950+X1960+X1970+X1980+X1990+X2000+X2010+X2020+X2030+X2040+X2159+X2188+X2207+X2247+X2257+X2316+X2335+X2492+X6145_2+X6145_3+X6145_4+X6145_5+X6145_6+X6149_4+X6149_6+X6150_1+X6150_2+X6150_3+X6152_5+X6152_6+X6152_9+X6154_1+X6154_3+X6154_4+X6154_5+X6154_6+X6159_1+X6159_3+X6159_4+X6159_5+X6159_6+X6159_7+X6144_1+X6144_2+X6144_3+X6144_4+alcohol+anaemia+arthritis+CHD+CKD+COPD+diabetes+dyspepsia+hypertension+hypothyroid+IBS+lipidaemias+obesity+gestiveitis+tobacco+ulcer+IID+Anxiety_disorders+Schizophrenia+Epilepsy+Nerve_root_and_plexus_disorders+Mononeuropathies_of_upper_limb+Gastro_Oesophageal_Reflux_disease+Other_Functional_Intestinal_disorders+Other_diseases_of_Anus_and_Rectum+Infections_of_the_Skin_and_Subcutaneous_Tissue+Arthrosis+Disk_disorders+Neuromuscular_Dysfunction_of_BladderN31+Depressive+Stroke+X2090+X2100+X1548_2+X1080.log+X1090.log+Waist.Hip.D+X1050.D+X1060.D+X46.D+X47.D+X48.D+X20015.D+X21001.D+X23099.D+X23105.D+X26410.D.log+X26412.D.log+X26413.D+X26414.D.log+X26415.D+X26416.D+X3062.D+X50.D+X24004.D.log+X24006.D+X24016.D+X30010.D+X30090.D+X30670.D+X1070.D+X1299.D.log+X1309.D.log+X1458.D+X1488.D.log+X1498.D.log+X3064.D+X4080.D+X709.D+X24501.D+X24504.D+X30000.D+X30060.D+X30080.D+X30120.D+X30130.D+X30140.D+X30160.D.log+X30170.D+X30180.D+X30190.D+X30250.D+X30280.D+X30290.D+X30530.D+X30610.D+X30630.D+X30650.D+X30710.D.log+X30730.D.log+X30720.D.log+X30750.D+X30770.D+X30870.D+X30890.D+X2217.D+X874.D.log+X2139.D+X22037.D.log+X22038.D.log+X1319.D.2+X135.D.2+X137.D.2+X1269+X1180.ev+X1883.73, data=data)
+library(broom)
+summary_info_20016 <- summary(Log20016fit)
+term <- rownames(summary_info_20016$coefficients)
+estimate <- summary_info_20016$coefficients[, "Estimate"]
+SE <- summary_info_20016$coefficients[, "Std. Error"]
+OR <- exp(estimate)
+conf.low <- exp(estimate - 1.96 * SE)
+conf.high <- exp(estimate + 1.96 * SE)
+p_value <- summary_info_20016$coefficients[, "Pr(>|t|)"] 
+result20016 <- data.frame(term, estimate, SE, OR, conf.low, conf.high, p_value)
+result20016 <- result20016[order(result20016$p_value), ]# 根据p-value列进行排序
+result20016$p.fdr <- p.adjust(result20016$p_value, method = "BH")
+library(openxlsx)
+write.xlsx(result20016, file = "Multivariable_20016.lm.tidy1.xlsx", rowNames = FALSE)
+
+##
+Log399fit <- lm(log399~X21022+X31_0+APOE4_new+ X6138+X738+X22035+X6162+X1100+X6146+X670+X728+X1190+X2237+X1389+X2050+X2060+X2070+X1920+X1950+X1960+X1970+X1980+X1990+X2010+X2020+X2030+X2492+X6154_3+X6144_4+Anxiety_disorders+Depressive+X2090+X2100+X1080.log+X1050.D+X1060.D+X46.D+X47.D+X48.D+X49.D+X20015.D+X21001.D+X21002.D+X23099.D+X23105.D+X23106.D+X26410.D.log+X26412.D.log+X26413.D+X26414.D.log+X3062.D+X50.D+X1488.D.log+X3064.D+X709.D+X30170.D+X30880.D+X137.D.2, data=data)
+library(broom)
+summary_info_399 <- summary(Log399fit)
+term <- rownames(summary_info_399$coefficients)
+estimate <- summary_info_399$coefficients[, "Estimate"]
+SE <- summary_info_399$coefficients[, "Std. Error"]
+OR <- exp(estimate)
+conf.low <- exp(estimate - 1.96 * SE)
+conf.high <- exp(estimate + 1.96 * SE)
+p_value <- summary_info_399$coefficients[, "Pr(>|t|)"] 
+result399 <- data.frame(term, estimate, SE, OR, conf.low, conf.high, p_value)
+result399 <- result399[order(result399$p_value), ]# 根据p-value列进行排序
+result399$p.fdr <- p.adjust(result399$p_value, method = "BH")
+library(openxlsx)
+write.xlsx(result399, file = "Multivariable_399.lm.tidy1.xlsx", rowNames = FALSE)
+
+## 
+Log20023fit <- lm(log20023~X21022+X31_0+APOE4_new+ X6138+X738+X1130+X1279_2+X6162+X6164+X1797+X1835+X1100+X1727+X1757+X6142_1+X6146+X670+X680+X728+X1170+X1239+X1558+X20117+X2267+X924_1+X943+X1190+X1220+X2178+X2296+X1110+X2237+X1329+X1389+X1448+X1031+X2050+X2060+X2070+X2080+X1920+X1930+X1960+X1970+X1980+X1990+X2010+X2020+X2030+X2040+X2188+X2316+X2335+X2492+X6145_1+X6145_6+X6149_6+X6150_1+X6150_2+X6150_3+X6154_3+X6154_6+X6144_1+X6144_3+alcohol+diabetes+hypertension+tobacco+Bipolar+Schizophrenia+Multiple_sclerosis+Epilepsy+Depressive+Stroke+X2090+X2100+X1080.log+X1090.log+Waist.Hip.D+X1060.D+X46.D+X47.D+X20015.D+X21002.D+X23105.D+X23106.D+X26410.D.log+X26412.D.log+X26413.D+X26414.D.log+X26416.D+X26417.D.log+X3062.D+X50.D+X24004.D.log+X24005.D+X24006.D+X24506.D+X30070.D+X1070.D+X1438.D+X3064.D+X709.D+X30000.D+X30140.D+X30170.D+X30610.D+X30710.D.log+X30720.D.log+X30750.D+X30770.D+X30890.D+X22039.D.log+X1289.D+X1319.D.2+X135.D.2+X137.D.2+X2139.2+X1269, data=data)
+library(broom)
+summary_info_20023 <- summary(Log20023fit)
+term <- rownames(summary_info_20023$coefficients)
+estimate <- summary_info_20023$coefficients[, "Estimate"]
+SE <- summary_info_20023$coefficients[, "Std. Error"]
+OR <- exp(estimate)
+conf.low <- exp(estimate - 1.96 * SE)
+conf.high <- exp(estimate + 1.96 * SE)
+p_value <- summary_info_20023$coefficients[, "Pr(>|t|)"] 
+result20023 <- data.frame(term, estimate, SE, OR, conf.low, conf.high, p_value)
+result20023 <- result20023[order(result20023$p_value), ]# 根据p-value列进行排序
+result20023$p.fdr <- p.adjust(result20023$p_value, method = "BH")
+library(openxlsx)
+write.xlsx(result20023, file = "Multivariable_20023.lm.tidy1.xlsx", rowNames = FALSE)
+
+##
+Log20018fit <- glm(Prospective_memory_20018_failed_95_new~X21022+X31_0+APOE4_new+ X6138+X738+X1130+X22035+X1279_2+X6160+X6162+X6164+X1835+X1777+X3088+X1100+X6142_1+X6146+X670+X680+X728+X2306+X1170+X1239+X1558+X1628+X20117+X2267+X924_1+X943+X1190+X1220+X2178+X2296+X2237+X1329+X1369+X1379+X1389+X1408+X1418+X1448+X1478+X1538+X1031+X2050+X2060+X2070+X1920+X1930+X1950+X1960+X1970+X1980+X1990+X2000+X2010+X2020+X2030+X2188+X2207+X2316+X2492+X6145_2+X6145_6+X6149_6+X6150_2+X6150_3+X6152_6+X6152_9+X6154_1+X6154_3+X6154_6+X6159_1+X6159_3+X6159_4+X6159_5+X6159_6+X6159_7+X6144_1+X6144_2+X6144_3+X6144_4+alcohol+anaemia+CHD+COPD+diabetes+hypertension+IBS+lipidaemias+gestiveitis+tobacco+ulcer+Bipolar+Anxiety_disorders+Schizophrenia+Epilepsy+Gastro_Oesophageal_Reflux_disease+Other_diseases_of_Anus_and_Rectum+Infections_of_the_Skin_and_Subcutaneous_Tissue+Arthrosis+Depressive+Stroke+X2090+X2100+X1080.log+Waist.Hip.D+X1050.D+X1060.D+X46.D+X47.D+X48.D+X20015.D+X21001.D+X23099.D+X23105.D+X26410.D.log+X26412.D.log+X26413.D+X26414.D.log+X26415.D+X26416.D+X3062.D+X50.D+X24004.D.log+X24006.D+X1070.D+X1488.D.log+X1498.D.log+X3064.D+X709.D+X30000.D+X30140.D+X30170.D+X30180.D+X30290.D+X30530.D+X30600.D+X30610.D+X30710.D.log+X30730.D.log+X30720.D.log+X30750.D+X2217.D+X2139.D+X1319.D.2+X135.D.2+X137.D.2+X1269+X1180.ev, data=data, family = binomial)
+library(broom)
+
+summary_info_20018 <- summary(Log20018fit)
+term <- rownames(summary_info_20018$coefficients)
+estimate <- summary_info_20018$coefficients[, "Estimate"]
+SE <- summary_info_20018$coefficients[, "Std. Error"]
+OR <- exp(estimate)
+conf.low <- exp(estimate - 1.96 * SE)
+conf.high <- exp(estimate + 1.96 * SE)
+##p_value <- summary_info_20018$coefficients[, "Pr(>|t|)"]
+p_value <- summary_info_20018$coefficients[,4]
+result20018 <- data.frame(term, estimate, SE, OR, conf.low, conf.high, p_value)
+result20018 <- result20018[order(result20018$p_value), ]# 根据p-value列进行排序
+result20018$p.fdr <- p.adjust(result20018$p_value, method = "BH")
+
+library(openxlsx)
+write.xlsx(result20018, file = "Multivariable_20018.lm.tidy.xlsx", rowNames = FALSE)
+
+
+A<-result20016
+B<- result399
+C<- result20023
+D<- result20018
+
+names(A) <- c("term", "estimate16", "SE16", "OR16", "conf.low16", "conf.high16", "p_value16", "p_fdr16")
+names(B) <- c("term", "estimate399", "SE399", "OR399", "conf.low399", "conf.high399", "p_value399", "p_fdr399")
+names(C) <- c("term", "estimate23", "SE23", "OR23", "conf.low23", "conf.high23", "p_value23", "p_fdr23")
+names(D) <- c("term", "estimate18", "SE18", "OR18", "conf.low18", "conf.high18", "p_value18", "p_fdr18")
+
+merged_data <- merge(A, B, by = "term", all = TRUE) %>% merge(C, by = "term", all = TRUE) %>% merge(D, by = "term", all = TRUE)
+
+write.xlsx(merged_data, file = "Multivariable_analyses.all.result.xlsx", rowNames = FALSE)
+
+
